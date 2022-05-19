@@ -9,23 +9,54 @@ from contracts.token.ERC721.ERC721_base import (
     ERC721_isApprovedForAll, ERC721_mint, ERC721_burn, ERC721_initializer, ERC721_approve,
     ERC721_setApprovalForAll, ERC721_transferFrom, ERC721_safeTransferFrom)
 
+
+
 #
-# Constructor
+# Declaring storage vars
+# Storage vars are by default not visible through the ABI. They are similar to "private" variables in Solidity
 #
 
-@constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        name : felt, symbol : felt, to_ : felt):
-    ERC721_initializer(name, symbol)
-    let to = to_
-    let token_id : Uint256 = Uint256(1, 0)
-    ERC721_mint(to, token_id)
-    return ()
+@storage_var
+func sex_storage(token_id : Uint256) -> (sex: felt):
 end
+
+@storage_var
+func legs_storage(token_id : Uint256) -> (legs: felt):
+end
+
+@storage_var
+func wings_storage(token_id : Uint256) -> (wings: felt):
+end
+
 
 #
 # Getters
 #
+@view
+func get_sex_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
+    let (sex) = sex_storage.read(token_id)
+    return (sex)
+end
+
+@view
+func get_legs_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
+    let (legs) = legs_storage.read(token_id)
+    return (legs)
+end
+
+@view
+func get_wings_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
+    let (wings) = wings_storage.read(token_id)
+    return (wings)
+end
+
+@view
+func get_animal_characteristics{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt, legs : felt, wings : felt):
+    let (sex) = sex_storage.read(token_id)
+    let (legs) = legs_storage.read(token_id)
+    let (wings) = wings_storage.read(token_id)
+    return (sex = sex, legs = legs, wings = wings)
+end
 
 @view
 func name{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (name : felt):
@@ -98,3 +129,22 @@ func safeTransferFrom{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_ch
     ERC721_safeTransferFrom(_from, to, token_id, data_len, data)
     return ()
 end
+
+#
+# Constructor
+#
+
+# Need to add characteristics when minting / done
+@constructor
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        name : felt, symbol : felt, to_ : felt):
+    ERC721_initializer(name, symbol)
+    let to = to_
+    let token_id : Uint256 = Uint256(1, 0)
+    ERC721_mint(to, token_id)
+    sex_storage.write(token_id, 2)
+    legs_storage.write(token_id, 7)
+    wings_storage.write(token_id, 2)
+    return ()
+end
+

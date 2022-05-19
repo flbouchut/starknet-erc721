@@ -151,6 +151,7 @@ func ex1_test_erc721{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
 
 	# Instanciating a zero in uint format
 	let zero_as_uint256: Uint256 = Uint256(0,0)
+	# Signifie que le solde de l'evaluateur doit être différent de zero 
 	let (is_equal) = uint256_eq(evaluator_init_balance, zero_as_uint256)
 	assert is_equal = 0
 
@@ -168,7 +169,9 @@ func ex1_test_erc721{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
 	# I need value 1 in the uint format to be able to substract it, and add it, to compare balances
 	let one_as_uint256: Uint256 = Uint256(1,0)
 	# Store expected balance in a variable, since I can't use everything on a single line
+	# S'attend a ce que la balance de l'evaluateur soit zero
 	let evaluator_expected_balance : Uint256 = uint256_sub(evaluator_init_balance, one_as_uint256)
+	# S'attend a ce que le balance de mon wallet soit 1
 	let (sender_expected_balance, _) = uint256_add(sender_init_balance, one_as_uint256)
 	# Verifying that balances where updated correctly
 	let (is_sender_balance_equal_to_expected) = uint256_eq(sender_expected_balance, sender_end_balance)
@@ -202,7 +205,7 @@ func ex2a_get_animal_rank{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
 	let (sender_address) = get_caller_address()
 
 	ex2a_get_animal_rank_internal(sender_address)
-
+	# Regarder dans la variable rank pour savoir quel rank est associe a notre adresse
 	return()
 end
 
