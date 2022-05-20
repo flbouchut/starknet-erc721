@@ -28,26 +28,50 @@ end
 func wings_storage(token_id : Uint256) -> (wings: felt):
 end
 
+@storage_var
+func token_counter_storage() -> (token_counter: felt):
+end
+
+@storage_var
+func evaluator_address_storage() -> (evaluator_address: felt):
+end
+
 
 #
 # Getters
 #
+
+# Useless for now
 @view
 func get_sex_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
     let (sex) = sex_storage.read(token_id)
     return (sex)
 end
 
+# Useless for now
 @view
-func get_legs_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
+func get_legs_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (legs : felt):
     let (legs) = legs_storage.read(token_id)
     return (legs)
 end
 
+# Useless for now
 @view
-func get_wings_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (sex : felt):
+func get_wings_of{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256) -> (wings : felt):
     let (wings) = wings_storage.read(token_id)
     return (wings)
+end
+
+@view
+func get_token_counter{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (token_counter : felt):
+    let (token_counter) = token_counter_storage.read()
+    return (token_counter)
+end
+
+@view
+func get_evaluator_address{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (evaluator_address : felt):
+    let (evaluator_address) = evaluator_address_storage.read()
+    return (evaluator_address)
 end
 
 @view
@@ -130,11 +154,25 @@ func safeTransferFrom{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_ch
     return ()
 end
 
+#Temporary solution until to find how to handle Uint256
+@external 
+func declare_animal{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(sex : felt, legs : felt, wings : felt) -> (token_id : Uint256):
+    alloc_locals
+    let ( token_counter ) = token_counter_storage.read()
+    let token_id : Uint256 = Uint256(token_counter + 1, 0)
+    token_counter_storage.write(token_counter + 1)
+    let (to) = evaluator_address_storage.read()
+    ERC721_mint(to, token_id)
+    sex_storage.write(token_id, sex)
+    legs_storage.write(token_id, legs)
+    wings_storage.write(token_id, wings)
+    return ( token_id )
+end
+
 #
 # Constructor
 #
 
-# Need to add characteristics when minting / done
 @constructor
 func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         name : felt, symbol : felt, to_ : felt):
@@ -142,6 +180,8 @@ func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     let to = to_
     let token_id : Uint256 = Uint256(1, 0)
     ERC721_mint(to, token_id)
+    token_counter_storage.write(1)
+    evaluator_address_storage.write(to)
     sex_storage.write(token_id, 2)
     legs_storage.write(token_id, 7)
     wings_storage.write(token_id, 2)
