@@ -2,7 +2,8 @@
 %builtins pedersen range_check ecdsa
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
-from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.uint256 import (
+    Uint256, uint256_add, uint256_sub)
 
 from contracts.token.ERC721.ERC721_base import (
     ERC721_name, ERC721_symbol, ERC721_balanceOf, ERC721_ownerOf, ERC721_getApproved,
@@ -36,10 +37,20 @@ end
 func evaluator_address_storage() -> (evaluator_address: felt):
 end
 
+@storage_var
+func token_of_owner_by_index_storage(account : felt, index : felt) -> (token_id : Uint256):
+end
+
 
 #
 # Getters
 #
+
+@view
+func token_of_owner_by_index{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(account : felt, index : felt) -> (token_id : Uint256):
+    let (token_id) = token_of_owner_by_index_storage.read(account, index)
+    return (token_id)
+end
 
 # Useless for now
 @view
@@ -162,11 +173,23 @@ func declare_animal{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_chec
     let token_id : Uint256 = Uint256(token_counter + 1, 0)
     token_counter_storage.write(token_counter + 1)
     let (to) = evaluator_address_storage.read()
+    let (balanceOfOwner) = balanceOf(to)
+    token_of_owner_by_index_storage.write(to, balanceOfOwner.low, token_id)
     ERC721_mint(to, token_id)
     sex_storage.write(token_id, sex)
     legs_storage.write(token_id, legs)
     wings_storage.write(token_id, wings)
     return ( token_id )
+end
+
+
+@external
+func declare_dead_animal{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256):
+    sex_storage.write(token_id, 0)
+    legs_storage.write(token_id, 0)
+    wings_storage.write(token_id, 0)
+    ERC721_burn(token_id)
+    return ()
 end
 
 #
@@ -185,6 +208,7 @@ func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     sex_storage.write(token_id, 2)
     legs_storage.write(token_id, 7)
     wings_storage.write(token_id, 2)
+    token_of_owner_by_index_storage.write(to, 0, token_id)
     return ()
 end
 
