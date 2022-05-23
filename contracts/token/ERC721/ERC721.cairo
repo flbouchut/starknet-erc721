@@ -2,6 +2,7 @@
 %builtins pedersen range_check ecdsa
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
+from starkware.starknet.common.syscalls import (get_contract_address, get_caller_address)
 from starkware.cairo.common.uint256 import (
     Uint256, uint256_add, uint256_sub)
 
@@ -10,6 +11,7 @@ from contracts.token.ERC721.ERC721_base import (
     ERC721_isApprovedForAll, ERC721_mint, ERC721_burn, ERC721_initializer, ERC721_approve,
     ERC721_setApprovalForAll, ERC721_transferFrom, ERC721_safeTransferFrom)
 
+from contracts.token.ERC20.IERC20 import IERC20
 
 
 #
@@ -41,10 +43,24 @@ end
 func token_of_owner_by_index_storage(account : felt, index : felt) -> (token_id : Uint256):
 end
 
+@storage_var
+func breeders(account : felt) -> (is_approved : felt):
+end
 
 #
 # Getters
 #
+
+@view
+func registration_price{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (price : Uint256):
+    return (Uint256(2,0))
+end
+
+@view
+func is_breeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(account : felt) -> (is_approved : felt):
+    let (is_approved) = breeders.read(account)
+    return (is_approved)
+end
 
 @view
 func token_of_owner_by_index{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(account : felt, index : felt) -> (token_id : Uint256):
@@ -133,6 +149,8 @@ func isApprovedForAll{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
     return (is_approved)
 end
 
+
+
 #
 # Externals
 #
@@ -169,19 +187,27 @@ end
 @external 
 func declare_animal{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(sex : felt, legs : felt, wings : felt) -> (token_id : Uint256):
     alloc_locals
-    let ( token_counter ) = token_counter_storage.read()
+
+    let (sender_address) = get_caller_address()
+    let (isApproved) = is_breeder(sender_address) 
+    let (token_counter) = token_counter_storage.read()
     let token_id : Uint256 = Uint256(token_counter + 1, 0)
-    token_counter_storage.write(token_counter + 1)
     let (to) = evaluator_address_storage.read()
     let (balanceOfOwner) = balanceOf(to)
-    token_of_owner_by_index_storage.write(to, balanceOfOwner.low, token_id)
-    ERC721_mint(to, token_id)
-    sex_storage.write(token_id, sex)
-    legs_storage.write(token_id, legs)
-    wings_storage.write(token_id, wings)
-    return ( token_id )
-end
 
+    #Don't know why revoked reference if I don't set the return inside the function 
+    if isApproved == 1:
+        token_counter_storage.write(token_counter + 1)
+        token_of_owner_by_index_storage.write(to, balanceOfOwner.low, token_id)
+        ERC721_mint(to, token_id)
+        sex_storage.write(token_id, sex)
+        legs_storage.write(token_id, legs)
+        wings_storage.write(token_id, wings)
+        return (token_id)
+    else: 
+        return (token_id)
+    end
+end
 
 @external
 func declare_dead_animal{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(token_id : Uint256):
@@ -190,6 +216,16 @@ func declare_dead_animal{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range
     wings_storage.write(token_id, 0)
     ERC721_burn(token_id)
     return ()
+end
+
+@external
+func register_me_as_breeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (is_added : felt):
+    alloc_locals
+    let (sender_address) = get_caller_address()
+    let (contract_address) = get_contract_address()
+    IERC20.transferFrom(contract_address = 0x07ff0a898530b169c5fe6fed9b397a7bbd402973ce2f543965f99d6d4a4c17b8, sender = sender_address, recipient = contract_address, amount = Uint256(2,0))
+    breeders.write(sender_address, 1)
+    return (1)
 end
 
 #
